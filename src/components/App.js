@@ -6,6 +6,8 @@ import Error from "./Error";
 import StartScreen from "./StartScreen";
 import Question from "./Question";
 import NextButton from "./NextButton";
+import Progress from "./Progress";
+import FinishScreen from "./FinishScreen";
 
 const initialState = {
   questions: [],
@@ -15,6 +17,7 @@ const initialState = {
   index: 0,
   answer: null,
   points: 0,
+  highscore: 0,
 };
 
 function reducer(state, action) {
@@ -53,6 +56,19 @@ function reducer(state, action) {
         index: state.index + 1,
         answer: null,
       };
+    case "finish":
+      return {
+        ...state,
+        status: "finished",
+        highscore:
+          state.points > state.highscore ? state.points : state.highscore,
+      };
+    case "restart":
+      return {
+        ...initialState,
+        questions: state.questions,
+        status: "ready",
+      };
     default:
       throw new Error("Unknown action type");
   }
@@ -61,9 +77,10 @@ function reducer(state, action) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const { questions, status, index, answer } = state;
+  const { questions, status, index, answer, points, highscore } = state;
 
   const totalQuestions = questions.length;
+  const maxPoints = questions.reduce((prev, cur) => prev + cur.points, 0);
 
   useEffect(() => {
     fetch("http://localhost:8000/questions")
@@ -83,6 +100,13 @@ export default function App() {
         )}
         {status === "active" && (
           <>
+            <Progress
+              index={index}
+              totalQuestions={totalQuestions}
+              points={points}
+              maxPoints={maxPoints}
+              answer={answer}
+            />
             <Question
               question={questions[index]}
               dispatch={dispatch}
@@ -95,6 +119,14 @@ export default function App() {
               index={index}
             />
           </>
+        )}
+        {status === "finished" && (
+          <FinishScreen
+            points={points}
+            maxPoints={maxPoints}
+            highscore={highscore}
+            dispatch={dispatch}
+          />
         )}
       </Main>
     </div>
